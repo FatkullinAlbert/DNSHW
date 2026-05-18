@@ -1,0 +1,8 @@
+Welcome to the DNS lab client!
+
+This machine is used for testing DNS resolution.
+Split-DNS is active: different clients see different views.
+
+Useful commands:
+  dig web1.dns.lab
+  ping www.newdns.lab

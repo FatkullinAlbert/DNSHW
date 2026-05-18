@@ -1,0 +1,152 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: install packages
+      apt:
+        name:
+          - bind9
+          - bind9-utils
+          - bind9-dnsutils
+          - chrony
+          - apparmor-utils
+        state: latest
+        update_cache: yes
+      ignore_errors: yes
+
+    - name: copy transferkey to all servers and the client
+      copy:
+        src: named.zonetransfer.key
+        dest: /etc/bind/named.zonetransfer.key
+        owner: root
+        group: bind
+        mode: 0644
+      ignore_errors: yes
+
+    - name: start and enable chrony
+      service:
+        name: chrony
+        state: started
+        enabled: yes
+      ignore_errors: yes
+
+- hosts: ns01
+  become: yes
+  tasks:
+    - name: copy named.conf
+      copy:
+        src: master-named.conf
+        dest: /etc/bind/named.conf
+        owner: root
+        group: bind
+        mode: 0640
+      ignore_errors: yes
+
+    - name: copy zones
+      copy:
+        src: "{{ item }}"
+        dest: /etc/bind/
+        owner: root
+        group: bind
+        mode: 0660
+      with_items:
+        - named.ddns.lab
+        - named.dns.lab
+        - named.dns.lab.client
+        - named.dns.lab.rev
+        - named.newdns.lab
+      ignore_errors: yes
+
+    - name: copy resolv.conf to the servers
+      template:
+        src: servers-resolv.conf.j2
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: 0644
+      ignore_errors: yes
+
+    - name: set AppArmor profile for named to complain mode
+      command: aa-complain /usr/sbin/named
+      ignore_errors: yes
+
+    - name: ensure bind9 is running and enabled
+      service:
+        name: bind9
+        state: restarted
+        enabled: yes
+      ignore_errors: yes
+
+- hosts: ns02
+  become: yes
+  tasks:
+    - name: copy named.conf
+      copy:
+        src: slave-named.conf
+        dest: /etc/bind/named.conf
+        owner: root
+        group: bind
+        mode: 0640
+      ignore_errors: yes
+
+    - name: copy resolv.conf to the servers
+      template:
+        src: servers-resolv.conf.j2
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: 0644
+      ignore_errors: yes
+
+    - name: remove old slave zone files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /var/cache/bind/named.dns.lab
+        - /var/cache/bind/named.dns.lab.client
+        - /var/cache/bind/named.dns.lab.rev
+        - /var/cache/bind/named.ddns.lab
+        - /var/cache/bind/named.newdns.lab
+      ignore_errors: yes
+
+    - name: set AppArmor profile for named to complain mode
+      command: aa-complain /usr/sbin/named
+      ignore_errors: yes
+
+    - name: ensure bind9 is running and enabled
+      service:
+        name: bind9
+        state: restarted
+        enabled: yes
+      ignore_errors: yes
+
+- hosts: client,client2
+  become: yes
+  tasks:
+    - name: copy resolv.conf to the client
+      copy:
+        src: client-resolv.conf
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: 0644
+      ignore_errors: yes
+
+    - name: copy rndc conf file
+      copy:
+        src: rndc.conf
+        dest: /home/vagrant/rndc.conf
+        owner: vagrant
+        group: vagrant
+        mode: 0644
+      ignore_errors: yes
+
+    - name: copy motd to the client
+      copy:
+        src: client-motd
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+      ignore_errors: yes
