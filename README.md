@@ -26,13 +26,11 @@ apt install ansible
 Установка Virtualbox:
 apt install virtualbox
 После установки пишем наши скрипты и Vagrantfile.
-Делаем запуск и проверяем работу нашей сети
-На client (192.168.50.15):
-ping web1.dns.lab → OK
-ping web2.dns.lab → ошибка "Name or service not known"
-ping www.newdns.lab → OK (пингует 192.168.50.15 или 192.168.50.16, оба адреса рабочие)
-На client2 (192.168.50.16):
-ping web1.dns.lab → OK
-ping web2.dns.lab → OK
-ping www.newdns.lab → ошибка (зона ему недоступна)
+Делаем запуск и проверяем работу нашей сети.
+На client:
+ping web1.dns.lab
+На client2:
+ping web1.dns.lab
+ping web2.dns.lab
+ping www.newdns.lab
 Если всё работает – задание выполнено.
